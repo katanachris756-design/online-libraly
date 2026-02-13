@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Online Library - Christech</title>
+
+<style>
+body{
+    font-family: Arial;
+    margin:0;
+    text-align:center;
+}
+
+.login-bg{
+    background:url("https://images.unsplash.com/photo-1523240795612-9a054b0db644") no-repeat center/cover;
+    height:100vh;
+}
+
+.user-bg{
+    background:url("https://images.unsplash.com/photo-1588072432836-e10032774350") no-repeat center/cover;
+    min-height:100vh;
+    padding-bottom:40px;
+}
+
+.container{
+    background:white;
+    width:340px;
+    padding:25px;
+    margin:auto;
+    margin-top:100px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.2);
+}
+
+input{
+    width:92%;
+    padding:8px;
+    margin:6px;
+}
+
+button{
+    width:95%;
+    padding:10px;
+    margin:6px;
+    background:#007bff;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+
+.list-box{
+    background:white;
+    width:70%;
+    margin:auto;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.2);
+}
+
+.links a{
+    display:block;
+    margin:5px;
+    color:blue;
+}
+
+.footer{
+    margin-top:20px;
+    font-weight:bold;
+}
+
+.download-link{
+    cursor:pointer;
+    color:blue;
+    text-decoration:underline;
+}
+</style>
+</head>
+
+<body class="login-bg" id="body">
+
+<!-- STEP 1: ASK IF USER HAS ACCOUNT -->
+<div id="choicePage" class="container">
+    <h2>ONLINE LIBRARY</h2>
+    <p>Do you have an account?</p>
+    <button onclick="showLogin()">Yes, Login</button>
+    <button onclick="showRegister()">No, Register</button>
+    <p>Powered by Christech</p>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="container" style="display:none;">
+    <h3>Login</h3>
+    <input id="loginUser" placeholder="Username or Email">
+    <input id="loginPass" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- REGISTER PAGE -->
+<div id="registerPage" class="container" style="display:none;">
+    <h3>Create Account</h3>
+    <input id="regUser" placeholder="Username">
+    <input id="regEmail" placeholder="Email">
+    <input id="regPass" type="password" placeholder="Password (PIN)">
+    <input id="regConfirm" type="password" placeholder="Confirm PIN">
+    <button onclick="register()">Register</button>
+</div>
+
+
+<!-- USER PAGE -->
+<div id="userPage" style="display:none;">
+    <h2 id="welcome"></h2>
+    <p id="time"></p>
+
+    <input id="search" placeholder="Search materials..." onkeyup="searchMaterial()">
+
+    <div class="list-box">
+        <h3>Available Materials (Click to Download)</h3>
+        <ol id="materialsList"></ol>
+    </div>
+
+    <div class="links">
+        <h3>Useful Links</h3>
+        <a href="https://portal.helb.co.ke/" target="_blank">HELB Portal</a>
+        <a href="https://student.mksu.ac.ke/" target="_blank">Machakos University Portal</a>
+        <a href="https://chat.openai.com/" target="_blank">Open ChatGPT</a>
+    </div>
+
+    <p class="footer">
+        Powered by Christech | Assistance: 0705379594
+    </p>
+</div>
+
+
+<!-- ADMIN PAGE -->
+<div id="adminPage" style="display:none;">
+    <h2>Admin Dashboard</h2>
+    <input type="file" id="pdfUpload" accept="application/pdf">
+    <button onclick="uploadMaterial()">Upload PDF</button>
+
+    <h3>Total Users: <span id="totalUsers"></span></h3>
+    <h3>Total Materials: <span id="totalMaterials"></span></h3>
+
+    <div class="list-box">
+        <ol id="adminMaterials"></ol>
+    </div>
+</div>
+
+
+<script>
+// Storage
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let materials = JSON.parse(localStorage.getItem("materials")) || [];
+
+// Navigation
+function showLogin(){
+    choicePage.style.display="none";
+    loginPage.style.display="block";
+}
+
+function showRegister(){
+    choicePage.style.display="none";
+    registerPage.style.display="block";
+}
+
+// Register
+function register(){
+    let username = regUser.value.trim();
+    let email = regEmail.value.trim();
+    let pass = regPass.value.trim();
+    let confirm = regConfirm.value.trim();
+
+    if(!username || !email || !pass || !confirm){
+        alert("Fill all fields");
+        return;
+    }
+
+    if(pass !== confirm){
+        alert("PINs do not match");
+        return;
+    }
+
+    let exists = users.find(u => u.email === email);
+    if(exists){
+        alert("Email already registered");
+        return;
+    }
+
+    users.push({username,email,password:pass});
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("currentUser", username);
+
+    openUserPage();
+}
+
+// Login
+function login(){
+    let userInput = loginUser.value.trim();
+    let pass = loginPass.value.trim();
+
+    // Admin
+    if(userInput==="admin" && pass==="admin123"){
+        openAdminPage();
+        return;
+    }
+
+    let user = users.find(u =>
+        (u.username===userInput || u.email===userInput) &&
+        u.password===pass
+    );
+
+    if(user){
+        localStorage.setItem("currentUser", user.username);
+        openUserPage();
+    }else{
+        alert("Invalid login");
+    }
+}
+
+
+// USER PAGE
+function openUserPage(){
+    choicePage.style.display="none";
+    loginPage.style.display="none";
+    registerPage.style.display="none";
+    adminPage.style.display="none";
+    userPage.style.display="block";
+    body.className="user-bg";
+
+    let user = localStorage.getItem("currentUser");
+    welcome.innerText = "Welcome " + user + ", we appreciate your presence!";
+
+    setInterval(()=>{
+        time.innerText = new Date().toLocaleString();
+    },1000);
+
+    displayMaterials(materials);
+}
+
+// Display materials
+function displayMaterials(list){
+    materialsList.innerHTML="";
+    list.forEach((m,i)=>{
+        materialsList.innerHTML +=
+        `<li><span class="download-link" onclick="downloadMaterial(${i})">
+        ${i+1}. ${m.name}</span></li>`;
+    });
+}
+
+// Download
+function downloadMaterial(index){
+    let m = materials[index];
+    let a = document.createElement("a");
+    a.href = m.data;
+    a.download = m.name;
+    a.click();
+}
+
+// Search
+function searchMaterial(){
+    let value = search.value.toLowerCase();
+    let filtered = materials.filter(m=>m.name.toLowerCase().includes(value));
+    displayMaterials(filtered);
+}
+
+
+// ADMIN
+function openAdminPage(){
+    choicePage.style.display="none";
+    loginPage.style.display="none";
+    registerPage.style.display="none";
+    userPage.style.display="none";
+    adminPage.style.display="block";
+
+    totalUsers.innerText = users.length;
+    totalMaterials.innerText = materials.length;
+
+    adminMaterials.innerHTML="";
+    materials.forEach((m,i)=>{
+        adminMaterials.innerHTML += `<li>${i+1}. ${m.name}</li>`;
+    });
+}
+
+// Upload PDF
+function uploadMaterial(){
+    let file = pdfUpload.files[0];
+    if(!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e){
+        materials.push({
+            name:file.name,
+            data:e.target.result
+        });
+        localStorage.setItem("materials", JSON.stringify(materials));
+        openAdminPage();
+    };
+    reader.readAsDataURL(file);
+}
+</script>
+
+</body>
+</html>
